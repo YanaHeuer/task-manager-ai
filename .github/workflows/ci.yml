@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build all modules
+        run: mvn -B -ntp clean package -DskipTests
+
+      - name: Run unit tests
+        run: mvn -B -ntp test -pl discovery-server,config-server,api-gateway,task-service,ai-service
+
+      - name: Run integration tests (Testcontainers)
+        run: mvn -B -ntp verify -pl task-service -DskipUnitTests=false
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "true"
+
+      - name: Publish test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: "**/target/surefire-reports/*.xml"
+
+  docker-build:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build jars
+        run: mvn -B -ntp clean package -DskipTests
+
+      - name: Build Docker images
+        run: |
+          for svc in discovery-server config-server api-gateway task-service ai-service; do
+            docker build -t task-manager-ai/$svc:${{ github.sha }} -f $svc/Dockerfile .
+          done

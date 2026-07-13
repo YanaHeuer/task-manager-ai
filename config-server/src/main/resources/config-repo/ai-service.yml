@@ -1,0 +1,9 @@
+# Shared configuration for ai-service, distributed by the Config Server.
+spring:
+  ai:
+    openai:
+      chat:
+        options:
+          model: llama-3.3-70b-versatile
+          temperature: 0.3
+          max-tokens: 400

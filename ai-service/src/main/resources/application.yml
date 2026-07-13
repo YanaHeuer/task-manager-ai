@@ -1,0 +1,44 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: ai-service
+  config:
+    import: optional:configserver:${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
+  ai:
+    openai:
+      api-key: ${GROQ_API_KEY}
+      base-url: https://api.groq.com/openai
+      chat:
+        options:
+          model: llama-3.3-70b-versatile
+          temperature: 0.3
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,ratelimiters
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  ratelimiter:
+    instances:
+      groqSummarize:
+        limit-for-period: 20
+        limit-refresh-period: 60s
+        timeout-duration: 2s
+
+logging:
+  level:
+    ru.tm.ai: INFO

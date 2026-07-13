@@ -1,0 +1,19 @@
+# Shared configuration for task-service, distributed by the Config Server.
+# Local values in task-service/application.yml itself take priority when overridden.
+task-service:
+  ai-service:
+    name: ai-service
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      aiService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+  retry:
+    instances:
+      aiService:
+        max-attempts: 3
+        wait-duration: 500ms
